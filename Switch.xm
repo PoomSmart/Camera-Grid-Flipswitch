@@ -1,38 +1,14 @@
-#import "FSSwitchDataSource.h"
-#import "FSSwitchPanel.h"
+#import <Flipswitch/FSSwitchDataSource.h>
+#import <Flipswitch/FSSwitchPanel.h>
+#import "../PS.h"
 
-NSString *const kGridKey = @"EnableGridLines";
+NSString *const kGridKey = isiOS9Up ? @"CAMUserPreferenceShowGridOverlay" : @"EnableGridLines";
 NSString *const kSwitchIdentifier = @"com.PS.CameraGrid";
 CFStringRef const CameraConfiguration = CFSTR("CameraConfiguration");
-CFStringRef const MobileSlideShow = CFSTR("com.apple.mobileslideshow");
-CFStringRef const kPostNotification = CFSTR("com.apple.mobileslideshow.PreferenceChanged");
+CFStringRef const Domain = isiOS9Up ? CFSTR("com.apple.camera") : CFSTR("com.apple.mobileslideshow");
+CFStringRef const kPostNotification = CFSTR("com.apple.mobileslideShow.PreferenceChanged");
 
 @interface CameraGridSwitch : NSObject <FSSwitchDataSource>
-@end
-
-@implementation CameraGridSwitch
-
-- (FSSwitchState)stateForSwitchIdentifier:(NSString *)switchIdentifier
-{
-	CFPreferencesAppSynchronize(MobileSlideShow);
-	NSDictionary *cameraConfiguration = [(NSDictionary *)CFPreferencesCopyAppValue(CameraConfiguration, MobileSlideShow) autorelease];
-	id value = cameraConfiguration[kGridKey];
-	return [value boolValue] ? FSSwitchStateOn : FSSwitchStateOff;
-}
-
-- (void)applyState:(FSSwitchState)newState forSwitchIdentifier:(NSString *)switchIdentifier
-{
-	if (newState == FSSwitchStateIndeterminate)
-		return;
-	NSDictionary *cameraConfiguration = [(NSDictionary *)CFPreferencesCopyAppValue(CameraConfiguration, MobileSlideShow) autorelease];
-	NSMutableDictionary *mutableCameraConfiguration = [cameraConfiguration.mutableCopy autorelease];
-	mutableCameraConfiguration[kGridKey] = @(newState == FSSwitchStateOn);
-	NSDictionary *editedCameraConfiguration = [mutableCameraConfiguration.copy autorelease];
-	CFPreferencesSetAppValue(CameraConfiguration, editedCameraConfiguration, MobileSlideShow);
-	CFPreferencesAppSynchronize(MobileSlideShow);
-	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), kPostNotification, NULL, NULL, YES);
-}
-
 @end
 
 static void PreferencesChanged()
@@ -40,7 +16,50 @@ static void PreferencesChanged()
 	[[FSSwitchPanel sharedPanel] stateDidChangeForSwitchIdentifier:kSwitchIdentifier];
 }
 
-__attribute__((constructor)) static void init()
+@implementation CameraGridSwitch
+
+- (id)init
 {
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)PreferencesChanged, kPostNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
+    if (self == [super init] && !isiOS9Up)
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)PreferencesChanged, kPostNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
+    return self;
 }
+
+- (void)dealloc
+{
+	if (!isiOS9Up)
+		CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, kPostNotification, NULL);
+	[super dealloc];
+}
+
+- (FSSwitchState)stateForSwitchIdentifier:(NSString *)switchIdentifier
+{
+	CFPreferencesAppSynchronize(Domain);
+	id value;
+	if (isiOS9Up)
+		value = [(id)CFPreferencesCopyAppValue((CFStringRef)kGridKey, Domain) autorelease];
+	else {
+		NSDictionary *cameraConfiguration = [(NSDictionary *)CFPreferencesCopyAppValue(CameraConfiguration, Domain) autorelease];
+		value = cameraConfiguration[kGridKey];
+	}
+	return [value boolValue] ? FSSwitchStateOn : FSSwitchStateOff;
+}
+
+- (void)applyState:(FSSwitchState)newState forSwitchIdentifier:(NSString *)switchIdentifier
+{
+	if (newState == FSSwitchStateIndeterminate)
+		return;
+	if (isiOS9Up) {
+		CFPreferencesSetAppValue((CFStringRef)kGridKey, newState == FSSwitchStateOn ? kCFBooleanTrue : kCFBooleanFalse, Domain);
+		CFPreferencesAppSynchronize(Domain);
+	}
+	NSDictionary *cameraConfiguration = [(NSDictionary *)CFPreferencesCopyAppValue(CameraConfiguration, Domain) autorelease];
+	NSMutableDictionary *mutableCameraConfiguration = [cameraConfiguration.mutableCopy autorelease];
+	mutableCameraConfiguration[kGridKey] = @(newState == FSSwitchStateOn);
+	NSDictionary *editedCameraConfiguration = [mutableCameraConfiguration.copy autorelease];
+	CFPreferencesSetAppValue(CameraConfiguration, editedCameraConfiguration, Domain);
+	CFPreferencesAppSynchronize(Domain);
+	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), kPostNotification, NULL, NULL, YES);
+}
+
+@end
