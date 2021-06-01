@@ -62,4 +62,10 @@ static void PreferencesChanged()
 	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), kPostNotification, NULL, NULL, YES);
 }
 
+- (void)applyAlternateActionForSwitchIdentifier:(NSString *)switchIdentifier
+{
+	NSURL *url = [NSURL URLWithString:(kCFCoreFoundationVersionNumber > 1443.0f ? @"prefs:root=CAMERA#CameraGridSwitch" : @"prefs:root=Photos#CameraGridSwitch")];
+	[[FSSwitchPanel sharedPanel] openURLAsAlternateAction:url];
+}
+
 @end
