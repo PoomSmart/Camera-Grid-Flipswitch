@@ -64,7 +64,7 @@ static void PreferencesChanged()
 
 - (void)applyAlternateActionForSwitchIdentifier:(NSString *)switchIdentifier
 {
-	NSURL *url = [NSURL URLWithString:(kCFCoreFoundationVersionNumber > 1443.0f ? @"prefs:root=CAMERA#CameraGridSwitch" : @"prefs:root=Photos#CameraGridSwitch")];
+	NSURL *url = [NSURL URLWithString:(kCFCoreFoundationVersionNumber >= 1443.0f ? @"prefs:root=CAMERA#CameraGridSwitch" : @"prefs:root=Photos#CameraGridSwitch")];
 	[[FSSwitchPanel sharedPanel] openURLAsAlternateAction:url];
 }
 
