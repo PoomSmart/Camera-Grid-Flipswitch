@@ -1,9 +1,12 @@
-Package: org.thebigboss.cameragridfs
+Package: com.ps.cameragridflipswitch
 Name: Camera Grid Flipswitch
-Depends: mobilesubstrate, com.a3tweaks.flipswitch, firmware (>= 7.0), gsc.still-camera | gsc.front-facing-camera
-Version: 0.0.1
+Depends: mobilesubstrate, com.a3tweaks.flipswitch, firmware (>= 11.0)
+Provides: org.thebigboss.cameragridfs
+Replaces: org.thebigboss.cameragridfs
+Conflicts: org.thebigboss.cameragridfs
+Version: 1.0.0
 Architecture: iphoneos-arm
-Description: Toggle for camera grid.
+Description: Flipswitch toggle for camera grid.
 Maintainer: PoomSmart
 Author: PoomSmart
 Section: Addons (Flipswitch)
